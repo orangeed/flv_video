@@ -13,7 +13,7 @@
       >
         您的浏览器不支持video
       </video>
-    </div> -->
+    </div>-->
     <!-- 视频播放 -->
     <el-row type="flex">
       <el-col :span="8" class="index-col">
@@ -26,13 +26,11 @@
             autoplay
             width="1024"
             height="576"
-          >
-            您的浏览器不支持video
-          </video>
+          >您的浏览器不支持video</video>
         </div>
       </el-col>
-      <el-col :span="8" class="index-col"
-        ><div class="mainContainer">
+      <el-col :span="8" class="index-col">
+        <div class="mainContainer">
           <video
             id="videoElement"
             ref="second"
@@ -41,13 +39,11 @@
             autoplay
             width="1024"
             height="576"
-          >
-            您的浏览器不支持video
-          </video>
-        </div></el-col
-      >
-      <el-col :span="8" class="index-col"
-        ><div class="mainContainer">
+          >您的浏览器不支持video</video>
+        </div>
+      </el-col>
+      <el-col :span="8" class="index-col">
+        <div class="mainContainer">
           <video
             id="videoElement"
             ref="third"
@@ -56,11 +52,9 @@
             autoplay
             width="1024"
             height="576"
-          >
-            您的浏览器不支持video
-          </video>
-        </div></el-col
-      >
+          >您的浏览器不支持video</video>
+        </div>
+      </el-col>
     </el-row>
     <!-- 全部暂停 -->
     <el-button
@@ -68,10 +62,15 @@
       ref="btn"
       style="width: 300px; margin: 30px"
       @click="handleStopAll"
-      >全部暂停</el-button
-    >
+    >全部暂停</el-button>
     <!-- 表单 -->
     <el-form ref="form" class="form" :model="postForm" label-width="130px">
+      <el-form-item label="请求的ip">
+        <el-input v-model="postForm.ip"></el-input>
+      </el-form-item>
+      <el-form-item label="请求的port">
+        <el-input v-model="postForm.port"></el-input>
+      </el-form-item>
       <el-form-item label="录像机id">
         <el-input v-model="postForm.nvrID"></el-input>
       </el-form-item>
@@ -94,18 +93,13 @@
         <el-input v-model="postForm.streamType"></el-input>
       </el-form-item>
       <el-form-item label="码流类型">
-        <el-input
-          v-model="postForm.channel"
-          placeholder="码流类型：1主码流；2次码流"
-        ></el-input>
+        <el-input v-model="postForm.channel" placeholder="码流类型：1主码流；2次码流"></el-input>
       </el-form-item>
       <el-form-item label="转发视频服务器ip">
         <el-input v-model="postForm.liveIP"></el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" style="width: 300px" @click="handleEnter"
-          >确定</el-button
-        >
+        <el-button type="primary" style="width: 300px" @click="handleEnter">确定</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -118,6 +112,8 @@ export default {
   data() {
     return {
       postForm: {
+        ip: "127.0.0.1",
+        port: "10023",
         nvrID: "1",
         nvrIP: "127.0.0.1",
         nvrPort: "3302",
@@ -130,34 +126,51 @@ export default {
       resultForm: {},
       videoPlayer: [],
       playSouce: {},
-      baseUrl: "http://127.0.0.1:10023/video/transfer",
+      // baseUrl: "http://127.0.0.1:10023/video/transfer",
+      baseUrl: "",
     };
   },
   computed: {},
-  created() {},
+  created() {
+    // this.baseUrl = `http://${this.postForm.ip}:${this.postForm.port}/video/transfer`;
+  },
   mounted() {
-    this.$nextTick(() => {
-      this.init();
-    });
+    // this.$nextTick(() => {
+    //   console.log("baseUrl", this.baseUrl);
+    //   this.init().then(() => {
+    //     console.log("this.$refs.first", this.$refs.first.src);
+    //   });
+    // });
   },
   watch: {},
   methods: {
     //   初始化视频
-    init() {
+    async init() {
       if (flvjs.isSupported()) {
-        const first = this.$refs.first;
+        // let newPlaySouce = this.playSouce.map((item, index) => {
+        //   return { ...item, ...arr[index] };
+        // });
         let flvPlayer = flvjs.createPlayer({
+          isLive: true,
           type: "flv",
-          url: "http://183.134.197.66:20023/live/test.flv",
-          //   url: "http://183.134.197.66:20023/live/test.flv",
+          // type: "mp4",
+          // url: "http://183.134.197.66:20023/live/test.flv",
+          url: this.playSouce.address,
         });
-        flvPlayer.attachMediaElement(first);
+        flvPlayer.attachMediaElement(this.playSouce.name);
         flvPlayer.load(); //加载
         flvPlayer.play();
+        this.playSouce.name.onclick = () => {
+          console.log(flvPlayer);
+          this.handleStopItem(flvPlayer._mediaElement.playID);
+        };
+        this.videoPlayer.push(flvPlayer);
       }
     },
     //   获取视频地址
     async handleEnter() {
+      this.baseUrl = `http://${this.postForm.ip}:${this.postForm.port}/video/transfer`;
+
       this.axios({
         method: "post",
         url: `${this.baseUrl}/realtime/nvr`,
@@ -165,13 +178,53 @@ export default {
       })
         .then((res) => {
           if (res.data.errorCode === 0) {
+            const first = this.$refs.first;
+            const second = this.$refs.second;
+            const third = this.$refs.third;
             this.playSouce = { ...res.data.data };
-            // this.init();
+            if (!first.src) {
+              first.playID = this.playSouce.playID;
+              this.playSouce.name = first;
+            } else if (!second.src) {
+              second.playID = this.playSouce.playID;
+              this.playSouce.name = second;
+            } else {
+              third.playID = this.playSouce.playID;
+              this.playSouce.name = third;
+            }
+            this.init();
           }
         })
         .catch((error) => {
           this.$message.error(error.message);
-        });
+        })
+        // .finally(() => {
+        //   const first = this.$refs.first;
+        //   const second = this.$refs.second;
+        //   const third = this.$refs.third;
+
+        //   if (!first.src) {
+        //     this.playSouce = {
+        //       playID: 1,
+        //       // address: "http://183.134.197.66:20023/live/test.flv",
+        //       // address: "https://www.askajohnny.com/shipinyasuo_1579414465.mov",
+        //       address: "https://mister-ben.github.io/videojs-flvjs/bbb.flv",
+        //     };
+        //     first.playID = this.playSouce.playID;
+        //     this.playSouce.name = first;
+        //   } else if (!second.src) {
+        //     this.playSouce = {
+        //       playID: 2,
+        //       // address: "http://183.134.197.66:20023/live/test.flv",
+        //       address: "https://www.askajohnny.com/shipinyasuo_1579414465.mov",
+        //     };
+        //     second.playID = this.playSouce.playID;
+        //     this.playSouce.name = second;
+        //   } else {
+        //     this.playSouce.name = third;
+        //   }
+        //   this.init();
+        // });
     },
     // 停止播放一个
     handleStopItem(id) {
@@ -193,6 +246,7 @@ export default {
     },
     // 全部停止
     handleStopAll() {
+      console.log("videoPlayer", this.videoPlayer);
       this.videoPlayer.forEach((play) => {
         play.pause();
       });
@@ -218,8 +272,10 @@ export default {
 .mainContainer {
   display: block;
   //   width: 1024px;
-  margin-left: auto;
-  margin-right: auto;
+  // margin-left: auto;
+  // margin-right: auto;
+  width: 100%;
+  margin: 0px 10px;
 }
 
 .centeredVideo {
@@ -231,9 +287,10 @@ export default {
   margin-bottom: auto;
 }
 .index-col {
-//   display: flex;
-//   justify-content: center;
-//   align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 .form {
   width: 50%;

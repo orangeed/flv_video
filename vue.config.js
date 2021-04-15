@@ -1,5 +1,6 @@
 // const path = require('path')
 module.exports = {
+    publicPath: './',
     chainWebpack: config => {
 
         config.module
@@ -11,6 +12,7 @@ module.exports = {
                 limit: 10000
             })
     },
+
     // resolve: {
     //     modules: [path.resolve('node_modules'), 'node_modules'],
     // }
